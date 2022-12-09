@@ -6,17 +6,11 @@ import argparse
 
 parser = argparse.ArgumentParser(description='搜索patch是否被包含进了源码中')
 
-parser.add_argument('--output', '-o', help='patch生成路径', required=True)
-parser.add_argument('--patch_income', '-p', help='patch来源路径', required=True)
-parser.add_argument('--src_path', '-s', help='源码路径', required=True)
+parser.add_argument('--output', '-o', help='the output path', required=True)
+parser.add_argument('--patch_income', '-p', help='the patch income path', required=True)
+parser.add_argument('--src_path', '-s', help='source code path', required=True)
+parser.add_argument('--debug' , '-d', help='entre debug mode', action='store_true')
 args = parser.parse_args()
-
-# def test_for_sys(output, patch_income):
-#     print('the output path is', output)
-#     print('the patch_income path is', patch_income)
-
-# def CmdLineArg():
-#     test_for_sys(args.output, args.patch_income)
 
 class BaseFunction:
     def shell_command(self, command):
@@ -34,19 +28,35 @@ class BaseFunction:
 
 def ParsePatchSubject(file):
     subject = ""
+
+    if args.debug:
+        print("file path is :" + file)
     f = open(file)
     lines = f.readlines()
     for i in lines:
-        if "Subject: [PATCH]" in i:
-            subject = i[16 : -1]
+        if "Subject" in i and "PATCH" in i:
+            if args.debug:
+                print("Subject line is: " + i)
+            subject_start_idx = 0
+            for j in i:
+                if j == ']':
+                    break
+                else:
+                    subject_start_idx += 1
+            subject = i[subject_start_idx + 1 : -1]
             break
     # print(subject)
     return subject.strip(' ')
 
 def IsPatchInclued(subject, src):
     base_funciton = BaseFunction()
-
-    ret = base_funciton.shell_command('cd ' + src + ' && ' + 'git log --oneline|grep "' + subject + '"')
+    ret = 1
+    command = 'cd ' + src + ' && ' + "git log --oneline|grep '" + subject + "'"
+    if args.debug:
+        print("shell command is: " + command)
+        input()
+    if subject != "":
+        ret = base_funciton.shell_command('cd ' + src + ' && ' + "git log --oneline|grep '" + subject + "'")
     
     if ret:
         return False
